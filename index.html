@@ -1,75 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T Sports HD - TV</title>
+<title>TV Interface</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
 <style>
 body {
     margin: 0;
     background: black;
     overflow: hidden;
+    font-family: Arial, sans-serif;
 }
+
+/* Video area */
 video {
     width: 100vw;
     height: 100vh;
     object-fit: contain;
     background: black;
 }
-.info {
+
+/* Left channel icons */
+.channel-icons {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.channel-icons .icon {
+    background: rgba(0,0,0,0.7);
     color: white;
-    font-size: 22px;
-    background: rgba(0,0,0,0.6);
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: 10px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.channel-icons .icon:hover {
+    transform: scale(1.2);
+}
+
+/* Right channel list */
+.channel-list {
+    position: absolute;
+    right: -250px;
+    top: 0;
+    width: 250px;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    padding: 10px;
+}
+
+.channel-list.show {
+    right: 0;
+}
+
+.channel-list h2 {
+    margin-top: 0;
+    font-size: 20px;
+    text-align: center;
+}
+
+.channel-list .list-item {
+    padding: 10px;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+}
+
+.channel-list .list-item:hover {
+    background: #222;
 }
 </style>
 </head>
-
 <body>
 
-<div class="info">T Sports HD</div>
+<!-- Main video -->
 <video id="video" autoplay playsinline></video>
 
+<!-- Left icons -->
+<div class="channel-icons" id="icons"></div>
+
+<!-- Right channel list -->
+<div class="channel-list" id="channelList">
+    <h2>All Channels</h2>
+    <div id="listItems"></div>
+</div>
+
 <script>
-var video = document.getElementById('video');
+// Channel data
+const channels = [
+    {
+        name: "T Sports HD",
+        icon: "📺",
+        stream: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=79601018981a65cd29ee2e20322481bdc898b3c3-1437b9d04b921ede14e95fd4c3ae7e25-1772540450-1772529650"
+    },
+    {
+        name: "BTV",
+        icon: "🟢",
+        stream: "http://103.230.105.252:1935/live/btv/manifest.m3u8-48aa-adcf-5a6c64da8c5c_3_playlist.m3u8"
+    },
+    {
+        name: "Star Jhalsha",
+        icon: "🔵",
+        stream: "http://103.144.89.251/player.php?stream=18"
+    }
+];
 
-var streamURL = "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=79601018981a65cd29ee2e20322481bdc898b3c3-1437b9d04b921ede14e95fd4c3ae7e25-1772540450-1772529650";
+// Load icons
+const iconsDiv = document.getElementById("icons");
+const listDiv = document.getElementById("listItems");
+channels.forEach((ch, i) => {
+    // Left icons
+    let iconEl = document.createElement("div");
+    iconEl.className = "icon";
+    iconEl.textContent = ch.icon;
+    iconEl.title = ch.name;
+    iconEl.addEventListener("click", () => loadStream(ch.stream));
+    iconsDiv.appendChild(iconEl);
 
-function startPlayer() {
+    // Right list
+    let listEl = document.createElement("div");
+    listEl.className = "list-item";
+    listEl.textContent = ch.name;
+    listEl.addEventListener("click", () => {
+        loadStream(ch.stream);
+        toggleChannelList();
+    });
+    listDiv.appendChild(listEl);
+});
 
+// Video player
+const video = document.getElementById("video");
+function loadStream(url) {
     if (Hls.isSupported()) {
-
-        var hls = new Hls({
-            maxBufferLength: 60,
-            liveSyncDuration: 5
-        });
-
-        hls.loadSource(streamURL);
+        var hls = new Hls();
+        hls.loadSource(url);
         hls.attachMedia(video);
-
         hls.on(Hls.Events.MANIFEST_PARSED, function() {
             video.play();
         });
-
-        hls.on(Hls.Events.ERROR, function(event, data) {
-            if (data.fatal) {
-                setTimeout(startPlayer, 3000);
-            }
-        });
-
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamURL;
+        video.src = url;
         video.play();
     }
 }
 
-startPlayer();
+// Toggle right channel list
+const channelList = document.getElementById("channelList");
+function toggleChannelList() {
+    channelList.classList.toggle("show");
+}
+
+// Press ArrowRight to open channel list
+document.addEventListener("keydown", function(e) {
+    if (e.key === "ArrowRight") {
+        toggleChannelList();
+    } else if(e.key === "ArrowLeft") {
+        channelList.classList.remove("show");
+    } else if(e.key === "Enter") {
+        // Do nothing, Enter handled by focus / click
+    }
+});
 </script>
 
 </body>
