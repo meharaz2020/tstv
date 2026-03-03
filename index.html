@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T Sports HD - TV Mode</title>
+<title>T Sports HD - TV</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
@@ -12,21 +12,20 @@ body {
     background: black;
     overflow: hidden;
 }
-
 video {
     width: 100vw;
     height: 100vh;
     object-fit: contain;
     background: black;
 }
-.channel-name {
+.info {
     position: absolute;
     top: 20px;
     left: 20px;
     color: white;
-    font-size: 24px;
+    font-size: 22px;
     background: rgba(0,0,0,0.6);
-    padding: 10px 15px;
+    padding: 8px 14px;
     border-radius: 6px;
 }
 </style>
@@ -34,31 +33,43 @@ video {
 
 <body>
 
-<div class="channel-name">T Sports HD</div>
-<video id="video" autoplay controls></video>
+<div class="info">T Sports HD</div>
+<video id="video" autoplay playsinline></video>
 
 <script>
 var video = document.getElementById('video');
-var stream = "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=79601018981a65cd29ee2e20322481bdc898b3c3-1437b9d04b921ede14e95fd4c3ae7e25-1772540450-1772529650";
 
-function loadStream() {
+var streamURL = "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=79601018981a65cd29ee2e20322481bdc898b3c3-1437b9d04b921ede14e95fd4c3ae7e25-1772540450-1772529650";
+
+function startPlayer() {
+
     if (Hls.isSupported()) {
+
         var hls = new Hls({
-            maxBufferLength: 30
+            maxBufferLength: 60,
+            liveSyncDuration: 5
         });
-        hls.loadSource(stream);
+
+        hls.loadSource(streamURL);
         hls.attachMedia(video);
 
-        hls.on(Hls.Events.ERROR, function () {
-            setTimeout(loadStream, 3000);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play();
         });
-    } 
-    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = stream;
+
+        hls.on(Hls.Events.ERROR, function(event, data) {
+            if (data.fatal) {
+                setTimeout(startPlayer, 3000);
+            }
+        });
+
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamURL;
+        video.play();
     }
 }
 
-loadStream();
+startPlayer();
 </script>
 
 </body>
