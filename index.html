@@ -1,63 +1,230 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Channel List</title>
-<style>
-body {
-    background: black;
-    color: white;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>MHR LIVE TV</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-h1 {
-    text-align: center;
-}
-
-.channel-list {
-    max-width: 400px;
-    margin: 20px auto;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.channel-list button {
-    padding: 15px;
-    font-size: 18px;
-    background: #e50914;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.channel-list button:hover {
-    background: #c40812;
-}
-</style>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            font-family: Arial, sans-serif;
+            color: white;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-top: 40px;
+            letter-spacing: 3px;
+            color: #ff0000;
+        }
+        /* Main Channel List (Your Original Style) */
+        
+        .channel-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            padding: 40px;
+        }
+        
+        .channel {
+            cursor: pointer;
+            transition: 0.3s;
+            width: 160px;
+        }
+        
+        .channel img {
+            width: 100%;
+            border-radius: 12px;
+            border: 2px solid #333;
+        }
+        
+        .channel:hover {
+            transform: scale(1.1);
+        }
+        
+        .channel:hover img {
+            border-color: #ff0000;
+        }
+        /* Fullscreen Player UI */
+        
+        #player-ui {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 1000;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        /* The Menu Bar Icon (Inside Player) */
+        
+        #menu-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1100;
+            background: rgba(255, 0, 0, 0.8);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+        /* Bottom Drawer for Switching Channels */
+        
+        #drawer {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            z-index: 1050;
+            transition: 0.4s;
+            padding: 20px 0;
+            border-top: 2px solid #ff0000;
+        }
+        
+        #drawer.active {
+            bottom: 0;
+        }
+        
+        .drawer-list {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 10px;
+        }
+        
+        .drawer-item {
+            width: 80px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 10px;
+        }
+        
+        .drawer-item img {
+            width: 100%;
+            border-radius: 5px;
+        }
+        /* Close Player Button */
+        
+        .close-player {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>All Channels</h1>
+    <h1>MHR LIVE TV</h1>
 
-<div class="channel-list">
-    <button onclick="openChannel('http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=79601018981a65cd29ee2e20322481bdc898b3c3-1437b9d04b921ede14e95fd4c3ae7e25-1772540450-1772529650')">T Sports HD</button>
+    <div class="channel-container">
+        <div class="channel" onclick="playStream('https://tvsen6.aynascope.net/SportsGrid/index.m3u8?e=1772558062&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=14d6905df8730b0468f1eaa917857125')">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/3/37/T_Sports_logo.png/320px-T_Sports_logo.png">
+            <p>T Sports</p>
+        </div>
 
-    <button onclick="openChannel('http://103.230.105.252:1935/live/btv/manifest.m3u8-48aa-adcf-5a6c64da8c5c_3_playlist.m3u8')">BTV</button>
+        <div class="channel" onclick="playStream('https://tvsen5.aynascope.net/willowhd/index.m3u8?e=1772558068&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=7c21a6489d45e2b06522197c28e8d5a3')">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5b/Willow_TV_Logo.png/250px-Willow_TV_Logo.png">
+            <p>Willow HD</p>
+        </div>
+    </div>
 
-    <button onclick="openChannel('http://103.144.89.251/player.php?stream=18')">Star Jhalsha</button>
-</div>
+    <div id="player-ui">
+        <button class="close-player" onclick="stopStream()">BACK TO LIST</button>
 
-<script>
-function openChannel(url) {
-    window.open(url, "_blank");
-}
-</script>
+        <video id="main-video" controls autoplay playsinline></video>
 
+        <div id="menu-btn" onclick="toggleDrawer()">
+            <span class="material-icons" style="font-size:30px;">menu</span>
+        </div>
+
+        <div id="drawer">
+            <div class="drawer-list">
+                <div class="drawer-item" onclick="playStream('https://tvsen6.aynascope.net/SportsGrid/index.m3u8?e=1772558062&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=14d6905df8730b0468f1eaa917857125')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/3/37/T_Sports_logo.png/320px-T_Sports_logo.png">
+                    <p>T Sports</p>
+                </div>
+                <div class="drawer-item" onclick="playStream('https://tvsen5.aynascope.net/willowhd/index.m3u8?e=1772558068&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=7c21a6489d45e2b06522197c28e8d5a3')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5b/Willow_TV_Logo.png/250px-Willow_TV_Logo.png">
+                    <p>Willow HD</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('main-video');
+        const ui = document.getElementById('player-ui');
+        const drawer = document.getElementById('drawer');
+        let hls = new Hls();
+
+        function playStream(url) {
+            ui.style.display = 'block';
+            drawer.classList.remove('active');
+
+            if (Hls.isSupported()) {
+                hls.detachMedia();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                });
+
+                // Handle 403 Forbidden specifically
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.response && data.response.code === 403) {
+                        alert("Error 403: The stream link has expired. Please update the URL.");
+                        stopStream();
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            }
+        }
+
+        function toggleDrawer() {
+            drawer.classList.toggle('active');
+        }
+
+        function stopStream() {
+            hls.detachMedia();
+            video.pause();
+            video.src = "";
+            ui.style.display = 'none';
+        }
+
+        // Close drawer if video is clicked
+        video.onclick = () => drawer.classList.remove('active');
+    </script>
 </body>
+
 </html>
