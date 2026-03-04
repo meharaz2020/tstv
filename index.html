@@ -1,321 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="referrer" content="no-referrer">
-    <title>MHR Pro Full Screen</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Sports Multi-Channel</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-         :root {
-            --mhr-accent: #ffffff;
-        }
+        :root { --primary: #ff0000; --bg: #0a0a0a; --sidebar: #151515; }
+        body { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Style */
+        .sidebar { width: 320px; background: var(--sidebar); display: flex; flex-direction: column; border-right: 1px solid #333; }
+        .sidebar-header { padding: 20px; text-align: center; background: #000; }
+        .sidebar-header img { width: 120px; }
         
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-            user-select: none;
-            touch-action: none;
+        .channel-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .channel-item {
+            display: flex; align-items: center; padding: 12px; margin-bottom: 5px;
+            background: #222; border-radius: 5px; cursor: pointer; transition: 0.2s;
         }
-        
-        .tv-frame {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-        }
-        /* FULL SCREEN FIX: Use 'fill' to stretch or 'cover' to crop-to-fill */
-        
-        video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: fill;
-            /* This forces the video to take the full screen */
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        
-        .active-view {
-            opacity: 1 !important;
-        }
-        
-        #blackout {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 5;
-            pointer-events: none;
-            opacity: 1;
-            transition: 0.3s;
-        }
-        /* UI Display */
-        
-        #chInfo {
-            position: absolute;
-            top: 40px;
-            left: 40px;
-            color: #fff;
-            z-index: 10;
-            opacity: 0;
-            transition: 0.3s;
-            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
-        }
-        
-        #chNumber {
-            font-size: 80px;
-            font-weight: 100;
-            line-height: 1;
-        }
-        
-        #chInfo.show {
-            opacity: 1;
-        }
-        /* Volume Bar */
-        
-        .vol-osd {
-            position: absolute;
-            right: 30px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 6px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            z-index: 100;
-            opacity: 0;
-            transition: 0.2s;
-        }
-        
-        .vol-osd.active {
-            opacity: 1;
-            right: 40px;
-        }
-        
-        .vol-fill {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: #fff;
-            box-shadow: 0 0 15px #fff;
-            border-radius: 10px;
-            transition: height 0.1s;
-        }
-        
-        #mhrBoot {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            color: white;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
+        .channel-item:hover { background: #333; }
+        .channel-item.active { background: var(--primary); }
+        .channel-item img { width: 30px; margin-right: 15px; }
+
+        /* Player Area */
+        .main-player { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        #video-wrapper { flex-grow: 1; background: #000; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Back to List (Mobile Only) */
+        .mobile-header { display: none; padding: 10px; background: #000; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: 40%; }
         }
     </style>
 </head>
+<body>
 
-<body oncontextmenu="return false;">
-
-    <div id="mhrBoot" onclick="launchMHR()">
-        <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">ENTER SYSTEM</div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png" alt="Logo">
+            <p>50 Live Channels</p>
+        </div>
+        <div class="channel-list" id="channelList">
+            </div>
     </div>
 
-    <div class="tv-frame" id="touchZone">
-        <div id="blackout"></div>
-
-        <div id="chInfo">
-            <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
-            <div id="chNumber">01</div>
+    <div class="main-player">
+        <div id="video-wrapper">
+            <video id="video" controls autoplay playsinline></video>
         </div>
-
-        <div class="vol-osd" id="volBar">
-            <div class="vol-fill" id="volLevel" style="height: 50%;"></div>
-        </div>
-
-        <video id="mhrPlayer" playsinline></video>
     </div>
 
     <script>
-        const playlist = [
+        const video = document.getElementById('video');
+        const channelList = document.getElementById('channelList');
+        let hls = null;
 
-           "https://tvsen7.aynascope.net/sjhdbd/index.m3u8?e=1772644203&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=d31d546e223ff068280166a4ab9a570a",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla/index.m3u8?token=eecb9dd1f4db1d75beacbab12ffc470557905273-f0d9fb1eedf0079aa4c03dc6333212d3-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/sony-aath/index.m3u8?token=a30ded4af3eea9c29c8ad2f17de875fc964fc80f-a04e933f6709ddf67071a8506c620377-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/zee-bangla-cinema/index.m3u8?token=8d1d02ae937643e45977489a0dfe3e850880d60e-881b199f91a23eac78f0712253898674-1772643396-1772639796",
-       
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1708/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1710/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1713/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1720/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1728/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1729/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1724/output/index.m3u8",
-            "https://owrcovcrpy.gpcdn.net/bpk-tv/1721/output/index.m3u8",
-            "https://iptvbd.live/metv1080/1080.m3u8",
-            "https://cdn-3.pishow.tv/live/1253/master.m3u8",
-            "https://app.ncare.live/c3VydmVyX8RpbEU9Mi8xNy8yMDE0GIDU6RgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcGVMZEJCTEFWeVN3PTOmdFsaWRtaW51aiPhnPTI2/greentv.stream/live-orgin/greentv.stream/chunks.m3u8",
-            "https://streaming.madanichannel.tv/static/streaming-playlists/hls/d3e49b76-ac06-4689-a641-9200445b647f/master.m3u8",
-            "https://edge2.roarzone.info:8447/roarzone/edge2/mashraga/index.m3u8?token=b3005ade6b5016c2cfcaf6a2a91885e57015c7fa-075c18a764c80a420caf27dddeb85ce4-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/ananda-tv/index.m3u8?token=a6403934792cbef8c35c65344acb1c7c3b77889c-e513eb1cb3841006234f6db12cb4471b-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/global-tv/index.m3u8?token=4ce3a3dd4fc555c945fb509ceda08e8215d46866-98edd61419c9366771ec504b625a759f-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/asian-tv/index.m3u8?token=ee19598b512dad0642e7b9ae0dc174cf36a04c85-a449282ec8ccf49962d6d719e4dfe168-1772643396-1772639796",
-
-
-
-
-
-
-            "https://live20.bozztv.com/giatvplayout7/giatv-209593/tracks-v1a1/mono.ts.m3u8",
-            "https://live20.bozztv.com/giatvplayout7/giatv-209612/tracks-v1a1/mono.ts.m3u8",
-            "https://cdn-2.pishow.tv/live/228/228_1.m3u8",
-            "https://cdn-2.pishow.tv/live/1461/master.m3u8",
-            "https://server.zillarbarta.com/ZBCINEMA/tracks-v1a1/mono.ts.m3u8",
-
-            "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01412-xiaomiasia-yrfmusic-xiaomi/playlist.m3u8",
-
-
-            "https://rtatv.akamaized.net/Content/HLS/Live/channel(RTA3)/03.m3u8",
-            "https://starsportshindiii.pages.dev/index.m3u8",
-
-
-
-
-            "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network/index.m3u8?token=cdf4516b98f215df9d99eaa6cfa8935aebedd091-6c0e27da1f7b9839536653514a3576f5-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/cartoon-network-hd/index.m3u8?token=b5012ab82068e2717b91d9ca6f5b8d496f786216-3e53f89a5429aff97637b8b825104219-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/pogo/index.m3u8?token=0813675d6643e7aa9b7af9b783733d3e5b4b702f-3ec020192f0e7e5de7ed41d81f7f88fc-1772643396-1772639796",
-            "https://edge2.roarzone.info:8447/roarzone/edge3/discovery-kids/index.m3u8?token=de103b0b5f52d1b4ca72f435eda69a18ce1f9d5d-3c55f3f41965a77f58f2c8c5d77426d7-1772643396-1772639796",
-            "https://live.kwikmotion.com/sharjahtvquranlive/shqurantv.smil/playlist.m3u8",
-            "https://server.zillarbarta.com/zbcatun/tracks-v1a1/mono.ts.m3u8",
-            "https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8",
-            "https://live20.bozztv.com/giatvplayout7/giatv-209902/tracks-v1a1/mono.ts.m3u8",
-            "https://live20.bozztv.com/giatvplayout7/giatv-209622/tracks-v1a1/mono.ts.m3u8",
-            "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ",
-            "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8",
-            "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
+        // Add your 50 channels here
+        const channels = [
+            { name: "T-Sports HD", url: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=f1446324f8f95119b94aa404cc163b8838b03c23-49aef64b56d14eff1cfdfe5f7a61eea3-1772657183-1772646383&remote=no_check_ip" },
+            { name: "Sports Channel 2", url: "HTTP_LINK_HERE" },
+            { name: "Sports Channel 3", url: "HTTP_LINK_HERE" },
+            // ... add more up to 50
         ];
 
-        let currentIndex = 0,
-            currentVol = 50,
-            hls = null,
-            osdTimer, chTimer;
-        let touchStartX = 0,
-            touchEndX = 0;
+        function loadChannel(url, element) {
+            // Highlight active channel
+            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
 
-        const video = document.getElementById('mhrPlayer');
-        const blackout = document.getElementById('blackout');
-
-        function launchMHR() {
-            document.documentElement.requestFullscreen().catch(() => {});
-            document.getElementById('mhrBoot').style.display = 'none';
-            tune(0);
-        }
-
-        function tune(i) {
-            currentIndex = i;
-            blackout.style.opacity = "1";
-
-            // Channel Display
-            document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
-            document.getElementById('chInfo').classList.add('show');
-            clearTimeout(chTimer);
-            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 3000);
-
-            if (hls) hls.destroy();
-            video.classList.remove('active-view');
-
+            // Initialize Player
+            if (hls) { hls.destroy(); }
+            
             if (Hls.isSupported()) {
                 hls = new Hls();
-                hls.loadSource(playlist[currentIndex]);
+                hls.loadSource(url);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play();
-                    video.classList.add('active-view');
-                    blackout.style.opacity = "0";
-                });
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Support for Safari/iOS
-                video.src = playlist[currentIndex];
-                video.addEventListener('loadedmetadata', () => {
-                    video.play();
-                    video.classList.add('active-view');
-                    blackout.style.opacity = "0";
-                });
+                video.src = url;
+                video.play();
             }
         }
 
-        function setVolume(delta) {
-            currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
-            video.volume = currentVol / 100;
-            document.getElementById('volLevel').style.height = currentVol + "%";
-            document.getElementById('volBar').classList.add('active');
-            clearTimeout(osdTimer);
-            osdTimer = setTimeout(() => document.getElementById('volBar').classList.remove('active'), 1500);
-        }
-
-        // SWIPE SYSTEM
-        const touchZone = document.getElementById('touchZone');
-        touchZone.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, {
-            passive: true
-        });
-        touchZone.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            const diff = touchStartX - touchEndX;
-            if (Math.abs(diff) > 70) {
-                if (diff > 0) tune((currentIndex + 1) % playlist.length); // Swipe Left
-                else tune((currentIndex - 1 + playlist.length) % playlist.length); // Swipe Right
-            }
-        }, {
-            passive: true
+        // Build the list
+        channels.forEach(ch => {
+            const item = document.createElement('div');
+            item.className = 'channel-item';
+            item.innerHTML = `<img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png"> <span>${ch.name}</span>`;
+            item.onclick = () => loadChannel(ch.url, item);
+            channelList.appendChild(item);
         });
 
-        // KEYBOARD SYSTEM
-        document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 39) tune((currentIndex + 1) % playlist.length);
-            if (e.keyCode === 37) tune((currentIndex - 1 + playlist.length) % playlist.length);
-            if (e.keyCode === 38) {
-                setVolume(5);
-                e.preventDefault();
-            }
-            if (e.keyCode === 40) {
-                setVolume(-5);
-                e.preventDefault();
-            }
+        // Volume keys
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowUp") video.volume = Math.min(video.volume + 0.1, 1);
+            if (e.key === "ArrowDown") video.volume = Math.max(video.volume - 0.1, 0);
         });
     </script>
 </body>
-
 </html>
