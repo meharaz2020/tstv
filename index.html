@@ -3,127 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T-Sports Live Console</title>
+    <title>T-Sports Live Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        :root { --red: #ff0000; --dark: #0a0a0a; --card: #161616; }
-        body { 
-            background: var(--dark); color: white; 
-            font-family: 'Segoe UI', sans-serif; 
-            text-align: center; padding: 40px; margin: 0; 
-        }
-        
-        .logo-box { margin-bottom: 20px; }
-        h1 { color: var(--red); font-size: 2.2rem; margin: 0; letter-spacing: 1px; }
-        p { color: #666; margin-top: 10px; margin-bottom: 40px; }
+        :root { --red: #ff0000; --bg: #0a0a0a; --card: #161616; }
+        body { background: var(--bg); color: white; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
 
+        /* Grid Setup */
         .grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-            gap: 20px; max-width: 1200px; margin: 0 auto; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: 15px; max-width: 1100px; margin: 20px auto; 
+        }
+        .card { 
+            background: var(--card); padding: 20px; border-radius: 12px; 
+            cursor: pointer; border: 1px solid #333; transition: 0.3s;
+        }
+        .card:hover { border-color: var(--red); transform: translateY(-5px); }
+        .card img { width: 50px; margin-bottom: 10px; }
+
+        /* THE FLOATING POPUP (MODAL) */
+        #video-popup {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: #000;
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+            border: 2px solid #333;
+            border-radius: 15px;
+            z-index: 1000;
+        }
+        
+        /* The header inside the popup */
+        .popup-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; background: #111; border-bottom: 1px solid #333;
+            border-radius: 15px 15px 0 0;
         }
 
-        .channel-card { 
-            background: var(--card); 
-            padding: 25px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            border: 1px solid #333; 
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
+        .close-btn {
+            background: var(--red); color: white; border: none;
+            padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
 
-        .channel-card:hover { 
-            border-color: var(--red); 
-            transform: scale(1.05);
-            background: #1f1f1f; 
-            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2);
+        /* Dark overlay to focus on the popup */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 999;
         }
 
-        .ch-id { 
-            position: absolute; top: 12px; left: 15px; 
-            color: var(--red); font-weight: bold; font-size: 1rem; opacity: 0.6;
-        }
-
-        .channel-card img { width: 60px; margin-bottom: 15px; }
-        .channel-card span { display: block; font-weight: 600; color: #fff; }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        video { width: 100%; height: calc(100% - 45px); border-radius: 0 0 15px 15px; outline: none; }
     </style>
 </head>
 <body>
 
-    <div class="logo-box">
-        <img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png" width="140">
-    </div>
-    <h1>LIVE CHANNELS</h1>
-    <p>Click to launch the player in a full-screen popup window</p>
+    <img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png" width="120">
+    <h1 style="color:var(--red)">CHANNEL CONSOLE</h1>
 
     <div class="grid" id="grid"></div>
 
+    <div id="overlay" onclick="closePopup()"></div>
+    <div id="video-popup">
+        <div class="popup-header">
+            <span id="ch-title" style="font-weight:bold; font-size:14px; color:#aaa;">Loading...</span>
+            <button class="close-btn" onclick="closePopup()">EXIT</button>
+        </div>
+        <video id="player" controls autoplay playsinline></video>
+    </div>
+
     <script>
         const channels = [
-            { 
-                name: "T-Sports HD", 
-                url: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=f1446324f8f95119b94aa404cc163b8838b03c23-49aef64b56d14eff1cfdfe5f7a61eea3-1772657183-1772646383&remote=no_check_ip" 
-            },
-            { name: "Channel 2", url: "http://example.com/2.m3u8" },
-            { name: "Channel 3", url: "http://example.com/3.m3u8" },
-            // Add all 50 channels here...
+            { name: "T-Sports HD", url: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=f1446324f8f95119b94aa404cc163b8838b03c23-49aef64b56d14eff1cfdfe5f7a61eea3-1772657183-1772646383&remote=no_check_ip" },
+            { name: "Channel 2", url: "http://example.com/stream2.m3u8" },
+            { name: "Channel 3", url: "http://example.com/stream3.m3u8" },
+            // Add all 50 channels here
         ];
 
         const grid = document.getElementById('grid');
+        const popup = document.getElementById('video-popup');
+        const overlay = document.getElementById('overlay');
+        const player = document.getElementById('player');
+        const chTitle = document.getElementById('ch-title');
+        let hls = null;
 
-        channels.forEach((ch, i) => {
-            const card = document.createElement('div');
-            card.className = 'channel-card';
-            card.innerHTML = `
-                <span class="ch-id">${i + 1}</span>
-                <img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png">
-                <span>${ch.name}</span>
-            `;
-            card.onclick = () => launchFullScreenPopup(ch.url);
-            grid.appendChild(card);
+        // Build the list
+        channels.forEach((ch) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<img src="http://103.144.89.251/assets/images/T%20SPORTS1744972630.png"><br><small>${ch.name}</small>`;
+            div.onclick = () => openChannel(ch.url, ch.name);
+            grid.appendChild(div);
         });
 
-        function launchFullScreenPopup(url) {
-            // Get user's full screen size
-            const w = window.screen.availWidth;
-            const h = window.screen.availHeight;
-            
-            // Set window features to hide browser UI
-            const features = [
-                `width=${w}`,
-                `height=${h}`,
-                `top=0`,
-                `left=0`,
-                'menubar=no',
-                'toolbar=no',
-                'location=yes', // Shows the direct stream URL
-                'status=no',
-                'resizable=yes',
-                'scrollbars=no'
-            ].join(',');
+        function openChannel(url, name) {
+            // Show the popup and overlay
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            chTitle.innerText = "STREAMING: " + name;
 
-            // Launch popup
-            const popup = window.open(url, '_blank', features);
-            
-            if (popup) {
-                popup.focus();
-            } else {
-                alert("Please allow popups for this site to watch the stream.");
+            // Kill existing stream before starting new one
+            if (hls) { hls.destroy(); }
+
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(player);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => player.play());
+            } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+                player.src = url;
             }
         }
 
-        // Keyboard Numbers 1-9 support
-        document.addEventListener('keydown', (e) => {
-            const key = parseInt(e.key);
-            if (key > 0 && key <= channels.length) {
-                launchFullScreenPopup(channels[key - 1].url);
-            }
-        });
+        function closePopup() {
+            popup.style.display = 'none';
+            overlay.style.display = 'none';
+            player.pause();
+            player.src = "";
+            if (hls) { hls.destroy(); hls = null; }
+        }
     </script>
 </body>
 </html>
