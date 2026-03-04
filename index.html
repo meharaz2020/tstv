@@ -3,188 +3,287 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="referrer" content="no-referrer">
-    <title>MHR TV | PRO</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
+    <title>MHR Pro Full Screen</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
          :root {
-            --accent: #ff0000;
+            --mhr-accent: #ffffff;
         }
         
-        body {
+        body,
+        html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background: #000;
-            font-family: 'Segoe UI', sans-serif;
-            color: white;
             overflow: hidden;
-        }
-        /* HEADER */
-        
-        header {
-            text-align: center;
-            padding: 10px;
-            background: #111;
-            border-bottom: 2px solid var(--accent);
+            font-family: 'Segoe UI', sans-serif;
+            user-select: none;
+            touch-action: none;
         }
         
-        h2 {
-            margin: 0;
-            color: var(--accent);
-            font-size: 1.2rem;
+        .tv-frame {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
         }
-        /* MAIN CONTAINER */
+        /* FULL SCREEN FIX: Use 'fill' to stretch or 'cover' to crop-to-fill */
         
-        #main-container {
-            display: flex;
-            height: calc(100vh - 50px);
-        }
-        /* LEFT SIDE: 100 CHANNEL LIST */
-        
-        #sidebar {
-            width: 250px;
-            background: #0a0a0a;
-            overflow-y: auto;
-            border-right: 1px solid #222;
-            padding: 10px;
-            scrollbar-width: thin;
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: fill;
+            /* This forces the video to take the full screen */
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
         
-        .channel-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            background: #151515;
-            cursor: pointer;
-            border: 2px solid transparent;
-            outline: none;
+        .active-view {
+            opacity: 1 !important;
+        }
+        
+        #blackout {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 1;
+            transition: 0.3s;
+        }
+        /* UI Display */
+        
+        #chInfo {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            color: #fff;
+            z-index: 10;
+            opacity: 0;
+            transition: 0.3s;
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
+        }
+        
+        #chNumber {
+            font-size: 80px;
+            font-weight: 100;
+            line-height: 1;
+        }
+        
+        #chInfo.show {
+            opacity: 1;
+        }
+        /* Volume Bar */
+        
+        .vol-osd {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            z-index: 100;
+            opacity: 0;
             transition: 0.2s;
         }
         
-        .channel-item:focus,
-        .channel-item.active {
-            background: #222;
-            border-color: var(--accent);
-            transform: scale(1.03);
+        .vol-osd.active {
+            opacity: 1;
+            right: 40px;
         }
         
-        .channel-item img {
-            width: 35px;
-            height: 35px;
-            object-fit: contain;
+        .vol-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+            border-radius: 10px;
+            transition: height 0.1s;
         }
         
-        .channel-item p {
-            margin: 0;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        /* RIGHT SIDE: THE PLAYER */
-        
-        #player-area {
-            flex-grow: 1;
-            background: #000;
-            position: relative;
-        }
-        /* THE MAGIC WINDOW */
-        
-        #tv-frame {
+        #mhrBoot {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border: none;
             background: #000;
-        }
-        
-        #welcome-msg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #444;
+            color: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
         }
     </style>
 </head>
 
-<body>
+<body oncontextmenu="return false;">
 
-    <header>
-        <h2>MHR TV PREMIUM</h2>
-    </header>
+    <div id="mhrBoot" onclick="launchMHR()">
+        <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
+        <div style="font-size: 8px; letter-spacing: 5px; color: #444; margin-top: 10px;">ENTER SYSTEM</div>
+    </div>
 
-    <div id="main-container">
-        <div id="sidebar" id="grid"></div>
+    <div class="tv-frame" id="touchZone">
+        <div id="blackout"></div>
 
-        <div id="player-area">
-            <div id="welcome-msg">
-                <span class="material-icons" style="font-size: 50px;">play_circle</span>
-                <p>Select a channel to start</p>
-            </div>
-            <iframe id="tv-frame" name="player" allowfullscreen></iframe>
+        <div id="chInfo">
+            <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
+            <div id="chNumber">01</div>
         </div>
+
+        <div class="vol-osd" id="volBar">
+            <div class="vol-fill" id="volLevel" style="height: 50%;"></div>
+        </div>
+
+        <video id="mhrPlayer" playsinline></video>
     </div>
 
     <script>
-        const channels = [{
-                name: "T SPORTS",
-                logo: "https://s3.aynaott.com/storage/dbc585f70a60b9855b6e13a8ce4cb6f4",
-                url: "http://103.144.89.251:8082/T-SPORTS-HD/index.m3u8?token=094380b1d1fc232cf14ae05deadbb2b329b39f81-fe927dc24e7292c760ec087589843bf9-1772569334-1772558534&remote=no_check_ip"
-            }, {
-                name: "WILLOW HD",
-                logo: "https://s3.aynaott.com/storage/94a778ec3219f7eb54bdf1ee07a95788",
-                url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8"
-            }
-            // Add all 100 here
+        const playlist = [
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1705/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1716/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1715/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1701/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1703/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1704/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1706/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1722/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1723/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1711/output/1711-audio_113412_eng=113200-video=1692000.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1708/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1710/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1713/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1720/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1728/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1729/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1724/output/index.m3u8",
+            "https://owrcovcrpy.gpcdn.net/bpk-tv/1721/output/index.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209593/tracks-v1a1/mono.ts.m3u8",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209902/tracks-v1a1/mono.ts.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-209622/tracks-v1a1/mono.ts.m3u8",
+            "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/tracks-v3a1/mono.m3u8?sid=s7AaNdTzDE2912wNcPLejQ",
+            "https://cloudfrontnet.vercel.app/tplay/playout/209617/master.m3u8",
+            "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
         ];
 
-        const sidebar = document.getElementById('sidebar');
-        const frame = document.getElementById('tv-frame');
-        const welcome = document.getElementById('welcome-msg');
-        let currentIndex = 0;
+        let currentIndex = 0,
+            currentVol = 50,
+            hls = null,
+            osdTimer, chTimer;
+        let touchStartX = 0,
+            touchEndX = 0;
 
-        channels.forEach((ch, idx) => {
-            const div = document.createElement('div');
-            div.className = 'channel-item';
-            div.tabIndex = 0;
-            div.innerHTML = `<img src="${ch.logo}"><p>${ch.name}</p>`;
+        const video = document.getElementById('mhrPlayer');
+        const blackout = document.getElementById('blackout');
 
-            const loadChannel = () => {
-                currentIndex = idx;
-                welcome.style.display = 'none';
-                frame.src = ch.url; // Loads link in the SAME frame
+        function launchMHR() {
+            document.documentElement.requestFullscreen().catch(() => {});
+            document.getElementById('mhrBoot').style.display = 'none';
+            tune(0);
+        }
 
-                // Remove active class from others
-                document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-                div.classList.add('active');
-            };
+        function tune(i) {
+            currentIndex = i;
+            blackout.style.opacity = "1";
 
-            div.onclick = loadChannel;
-            div.onkeydown = (e) => {
-                if (e.key === "Enter") loadChannel();
-            };
-            sidebar.appendChild(div);
+            // Channel Display
+            document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
+            document.getElementById('chInfo').classList.add('show');
+            clearTimeout(chTimer);
+            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 3000);
+
+            if (hls) hls.destroy();
+            video.classList.remove('active-view');
+
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(playlist[currentIndex]);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    video.classList.add('active-view');
+                    blackout.style.opacity = "0";
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Support for Safari/iOS
+                video.src = playlist[currentIndex];
+                video.addEventListener('loadedmetadata', () => {
+                    video.play();
+                    video.classList.add('active-view');
+                    blackout.style.opacity = "0";
+                });
+            }
+        }
+
+        function setVolume(delta) {
+            currentVol = Math.min(Math.max(currentVol + delta, 0), 100);
+            video.volume = currentVol / 100;
+            document.getElementById('volLevel').style.height = currentVol + "%";
+            document.getElementById('volBar').classList.add('active');
+            clearTimeout(osdTimer);
+            osdTimer = setTimeout(() => document.getElementById('volBar').classList.remove('active'), 1500);
+        }
+
+        // SWIPE SYSTEM
+        const touchZone = document.getElementById('touchZone');
+        touchZone.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {
+            passive: true
+        });
+        touchZone.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 70) {
+                if (diff > 0) tune((currentIndex + 1) % playlist.length); // Swipe Left
+                else tune((currentIndex - 1 + playlist.length) % playlist.length); // Swipe Right
+            }
+        }, {
+            passive: true
         });
 
-        // REMOTE NAVIGATION
-        window.addEventListener('keydown', (e) => {
-            if (e.key === "ArrowDown") {
-                currentIndex = (currentIndex + 1) % channels.length;
-                sidebar.children[currentIndex].focus();
-            } else if (e.key === "ArrowUp") {
-                currentIndex = (currentIndex - 1 + channels.length) % channels.length;
-                sidebar.children[currentIndex].focus();
+        // KEYBOARD SYSTEM
+        document.addEventListener("keydown", (e) => {
+            if (e.keyCode === 39) tune((currentIndex + 1) % playlist.length);
+            if (e.keyCode === 37) tune((currentIndex - 1 + playlist.length) % playlist.length);
+            if (e.keyCode === 38) {
+                setVolume(5);
+                e.preventDefault();
+            }
+            if (e.keyCode === 40) {
+                setVolume(-5);
+                e.preventDefault();
             }
         });
-
-        window.onload = () => {
-            if (sidebar.children[0]) sidebar.children[0].focus();
-        };
     </script>
 </body>
 
