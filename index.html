@@ -4,139 +4,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MHR PRO - Live TV</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>MHR PRO - Portal</title>
     <style>
-         :root {
-            --bg: #050505;
-            --card: #121212;
-            --text: #ffffff;
-        }
-        
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg);
-            color: var(--text);
+        body {
+            background: #0a0a0a;
+            color: white;
             font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-        }
-        /* Home Screen */
-        
-        #home {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            text-align: center;
+            margin: 0;
         }
         
         .logo {
-            font-size: 3rem;
+            font-size: 2.5rem;
+            letter-spacing: 8px;
             font-weight: 900;
-            letter-spacing: 10px;
             margin-bottom: 40px;
-            background: linear-gradient(45deg, #fff, #666);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fff;
         }
         
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            width: 80%;
+            width: 90%;
             max-width: 600px;
         }
         
-        .card {
-            background: var(--card);
-            padding: 50px 20px;
-            border-radius: 20px;
-            border: 1px solid #222;
+        .ch-card {
+            background: #151515;
+            padding: 40px 20px;
+            border-radius: 15px;
+            text-align: center;
             cursor: pointer;
+            border: 1px solid #333;
             transition: 0.3s;
             font-weight: bold;
+            text-transform: uppercase;
         }
         
-        .card:hover {
+        .ch-card:hover {
             background: #fff;
             color: #000;
             transform: translateY(-5px);
         }
-        /* Player Screen (Hidden by default) */
         
-        #player-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 100;
-        }
-        
-        video {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border-radius: 30px;
-            cursor: pointer;
-            z-index: 110;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-        }
-        
-        #loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
-            border: 5px solid #333;
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s infinite linear;
-            display: none;
-        }
-        
-        @keyframes spin {
-            to {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
+        .ch-card span {
+            display: block;
+            font-size: 0.7rem;
+            margin-top: 10px;
+            opacity: 0.5;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="home">
-        <div class="logo">MHR PRO</div>
-        <div class="grid">
-            <div class="card" onclick="play(0)">STAR JALSHA</div>
-            <div class="card" onclick="play(1)">ZEE BANGLA</div>
-        </div>
-    </div>
+    <div class="logo">MHR PRO</div>
 
-    <div id="player-container">
-        <div class="back-btn" onclick="closePlayer()">← BACK TO LIST</div>
-        <div id="loader"></div>
-        <video id="video" controls autoplay playsinline></video>
+    <div class="grid">
+        <div class="ch-card" onclick="openFullStream(0)">
+            Star Jalsha
+            <span>OPEN IN NEW TAB</span>
+        </div>
+        <div class="ch-card" onclick="openFullStream(1)">
+            Zee Bangla
+            <span>OPEN IN NEW TAB</span>
+        </div>
     </div>
 
     <script>
@@ -145,35 +82,16 @@
             "http://103.144.89.251:8082/ZEE.BANGLA.HD/index.m3u8?token=f04bc2eeda8b5cfae097b10e01ff12ad15bdf95c-c28c41c9030e870ed722d56850bfbfc9-1772831917-1772821117&remote=no_check_ip"
         ];
 
-        let hls = null;
-        const video = document.getElementById('video');
-        const loader = document.getElementById('loader');
+        function openFullStream(index) {
+            const m3u8Url = playlist[index];
 
-        function play(id) {
-            const url = playlist[id];
-            document.getElementById('player-container').style.display = 'block';
-            loader.style.display = 'block';
+            /* Since Vercel is HTTPS and your link is HTTP, we use an 
+               external web player that allows HTTP links. 
+            */
+            const playerWrapper = m3u8Url;
 
-            if (hls) hls.destroy(); // Clear previous stream
-
-            if (Hls.isSupported()) {
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-            }
-
-            video.onplaying = () => loader.style.display = 'none';
-            video.onwaiting = () => loader.style.display = 'block';
-            video.onerror = () => alert("Stream Error: Token might be expired.");
-        }
-
-        function closePlayer() {
-            video.pause();
-            if (hls) hls.destroy();
-            document.getElementById('player-container').style.display = 'none';
+            // Open the external player with your link in a new tab
+            window.open(playerWrapper, '_blank');
         }
     </script>
 </body>
