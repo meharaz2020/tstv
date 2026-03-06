@@ -3,13 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="referrer" content="no-referrer">
-    <title>MHR Pro Full Screen</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHR PRO - Live TV</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
          :root {
-            --mhr-accent: #ffffff;
+            --bg: #050505;
+            --card: #121212;
+            --text: #ffffff;
         }
         
         body,
@@ -18,251 +19,162 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #000;
-            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
             font-family: 'Segoe UI', sans-serif;
-            user-select: none;
+            overflow: hidden;
         }
+        /* Home Screen */
         
-        .tv-frame {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-        }
-        
-        video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: fill;
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        
-        .active-view {
-            opacity: 1 !important;
-        }
-        
-        #blackout {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 5;
-            pointer-events: none;
-            opacity: 1;
-            transition: 0.3s;
-        }
-        /* --- MODERN CONTROL BAR (TOP RIGHT) --- */
-        
-        .modern-controls {
-            position: absolute;
-            top: 30px;
-            /* Positioned at the top */
-            right: 30px;
-            /* Positioned at the right */
+        #home {
             display: flex;
-            align-items: center;
-            gap: 20px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            padding: 10px 20px;
-            border-radius: 12px;
-            z-index: 100;
-            opacity: 0;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transform: translateY(-10px);
-            /* Slight slide-in effect */
-        }
-        
-        .modern-controls.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .control-btn {
-            cursor: pointer;
-            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.2s;
+            height: 100vh;
+            text-align: center;
         }
         
-        .control-btn:hover {
-            opacity: 0.7;
+        .logo {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: 10px;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #fff, #666);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
-        .control-btn:active {
-            transform: scale(0.9);
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            width: 80%;
+            max-width: 600px;
         }
         
-        .icon {
-            width: 22px;
-            height: 22px;
-            fill: white;
-        }
-        /* UI Display */
-        
-        #chInfo {
-            position: absolute;
-            top: 40px;
-            left: 40px;
-            color: #fff;
-            z-index: 10;
-            opacity: 0;
+        .card {
+            background: var(--card);
+            padding: 50px 20px;
+            border-radius: 20px;
+            border: 1px solid #222;
+            cursor: pointer;
             transition: 0.3s;
-            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.9);
+            font-weight: bold;
         }
         
-        #chNumber {
-            font-size: 80px;
-            font-weight: 100;
-            line-height: 1;
+        .card:hover {
+            background: #fff;
+            color: #000;
+            transform: translateY(-5px);
         }
+        /* Player Screen (Hidden by default) */
         
-        #chInfo.show {
-            opacity: 1;
-        }
-        
-        #mhrBoot {
+        #player-container {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: #000;
-            color: white;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.8s ease;
+            z-index: 100;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 110;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            display: none;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
         }
     </style>
 </head>
 
-<body oncontextmenu="return false;">
+<body>
 
-    <div id="mhrBoot">
-        <div style="font-size: 60px; font-weight: 100; letter-spacing: 15px;">MHR</div>
-        <div style="font-size: 8px; letter-spacing: 5px; color: #666; margin-top: 10px;">SYSTEM LOADING...</div>
+    <div id="home">
+        <div class="logo">MHR PRO</div>
+        <div class="grid">
+            <div class="card" onclick="play(0)">STAR JALSHA</div>
+            <div class="card" onclick="play(1)">ZEE BANGLA</div>
+        </div>
     </div>
 
-    <div class="tv-frame" id="touchZone">
-        <div id="blackout"></div>
-
-        <div id="chInfo">
-            <div style="font-size: 10px; letter-spacing: 4px; color: #aaa;">CHANNEL</div>
-            <div id="chNumber">01</div>
-        </div>
-
-        <div class="modern-controls" id="controlBar">
-            <div class="control-btn" title="Previous" onclick="prevChannel()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
-            </div>
-            <div class="control-btn" title="Next" onclick="nextChannel()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-            </div>
-            <div class="control-btn" title="Refresh" onclick="location.reload()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            </div>
-            <div class="control-btn" title="Full Screen" onclick="toggleFullScreen()">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-            </div>
-        </div>
-
-        <video id="mhrPlayer" playsinline></video>
+    <div id="player-container">
+        <div class="back-btn" onclick="closePlayer()">← BACK TO LIST</div>
+        <div id="loader"></div>
+        <video id="video" controls autoplay playsinline></video>
     </div>
 
     <script>
         const playlist = [
-            "https://tvsen6.aynascope.net//btv_world/index.m3u8?e=1772727134&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=ba50114bc0822434cfe3fb5bbdb07eb4",
-            "https://futbollive.online/T-Sports/tracks-v1a1/mono.m3u8",
-            "https://tvsen6.aynascope.net//btvctg/index.m3u8?e=1772731546&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=d43e3e6517d74d720b2edc4bef3c10c7",
-            "https://tvsen7.aynascope.net//sjhdbd/index.m3u8?e=1772731814&u=78be6644-0a65-48ec-81a4-089ac65a2619&token=4ff0d784e5b07489e775a994399e4430"
+            "http://103.144.89.251:8082/STAR.JALSHA.HD/index.m3u8?token=abc278d302818591790a0ba51520c86ef023a65c-7f92310241b96c363b9933b1881e1212-1772831839-1772821039&remote=no_check_ip",
+            "http://103.144.89.251:8082/ZEE.BANGLA.HD/index.m3u8?token=f04bc2eeda8b5cfae097b10e01ff12ad15bdf95c-c28c41c9030e870ed722d56850bfbfc9-1772831917-1772821117&remote=no_check_ip"
         ];
 
-        let currentIndex = 0,
-            hls = null,
-            chTimer, uiTimer;
-        const video = document.getElementById('mhrPlayer');
-        const blackout = document.getElementById('blackout');
-        const controlBar = document.getElementById('controlBar');
+        let hls = null;
+        const video = document.getElementById('video');
+        const loader = document.getElementById('loader');
 
-        // AUTO-BOOT 3 SECONDS
-        window.onload = () => {
-            setTimeout(() => {
-                const boot = document.getElementById('mhrBoot');
-                boot.style.opacity = '0';
-                setTimeout(() => {
-                    boot.style.display = 'none';
-                    tune(0);
-                }, 800);
-            }, 3000);
-        };
+        function play(id) {
+            const url = playlist[id];
+            document.getElementById('player-container').style.display = 'block';
+            loader.style.display = 'block';
 
-        function showUI() {
-            controlBar.classList.add('visible');
-            clearTimeout(uiTimer);
-            uiTimer = setTimeout(() => controlBar.classList.remove('visible'), 3000);
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => console.log(e));
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
-        }
-
-        function nextChannel() {
-            tune((currentIndex + 1) % playlist.length);
-        }
-
-        function prevChannel() {
-            tune((currentIndex - 1 + playlist.length) % playlist.length);
-        }
-
-        function tune(i) {
-            currentIndex = i;
-            blackout.style.opacity = "1";
-            showUI();
-
-            document.getElementById('chNumber').innerText = (currentIndex + 1).toString().padStart(2, '0');
-            document.getElementById('chInfo').classList.add('show');
-            clearTimeout(chTimer);
-            chTimer = setTimeout(() => document.getElementById('chInfo').classList.remove('show'), 3000);
-
-            if (hls) hls.destroy();
-            video.classList.remove('active-view');
+            if (hls) hls.destroy(); // Clear previous stream
 
             if (Hls.isSupported()) {
                 hls = new Hls();
-                hls.loadSource(playlist[currentIndex]);
+                hls.loadSource(url);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play().catch(() => {});
-                    video.classList.add('active-view');
-                    blackout.style.opacity = "0";
-                });
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
             }
+
+            video.onplaying = () => loader.style.display = 'none';
+            video.onwaiting = () => loader.style.display = 'block';
+            video.onerror = () => alert("Stream Error: Token might be expired.");
         }
 
-        document.addEventListener('mousemove', showUI);
-        document.addEventListener('touchstart', showUI);
-
-        document.addEventListener("keydown", (e) => {
-            if (e.keyCode === 39) nextChannel();
-            if (e.keyCode === 37) prevChannel();
-        });
+        function closePlayer() {
+            video.pause();
+            if (hls) hls.destroy();
+            document.getElementById('player-container').style.display = 'none';
+        }
     </script>
 </body>
 
